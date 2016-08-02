@@ -1,7 +1,6 @@
 #! /usr/bin/python
 import serial
 import string
-import random
 from timeit import Timer
 import timeit
 
@@ -17,9 +16,6 @@ success = 0
 fail = 0
 
 
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
-
 ser = serial.Serial()
 ser.port = "/dev/ttyUSB0"    
 ser.baudrate = BAUDRATE    
@@ -31,8 +27,9 @@ ser.writeTimeout=None
 ser.open() 
 
 #Get Packet Ready here
-for i in range(0,NPackSend): 
-	data = data + 'S' + str(i).zfill(8) + 'E'
+f1 = open('/home/elvis/Workspace/automated-grading-new/data/packetout', 'rb')
+data = f1.read()
+
 
 def com1():
  global flag_bad_pack
