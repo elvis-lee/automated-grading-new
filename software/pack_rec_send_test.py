@@ -6,7 +6,6 @@ import timeit
 
 BAUDRATE = 460800
 NPackSend = 5678
-NPackRec = 5678
 npackrec = 0
 M = 100
 flag_bad_pack = 0
@@ -34,7 +33,6 @@ data = f1.read()
 def com1():
  global flag_bad_pack
  global npackrec
- global NPackRec
  global success
  global fail
  global flag_end_of_tranfer
