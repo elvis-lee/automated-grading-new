@@ -5,7 +5,6 @@ from timeit import Timer
 import timeit
 
 BAUDRATE = 460800
-NPackSend = 5678
 npackrec = 0
 M = 100
 flag_bad_pack = 0
@@ -21,7 +20,7 @@ ser.baudrate = BAUDRATE
 ser.parity=serial.PARITY_NONE
 ser.bytesize=serial.EIGHTBITS
 ser.stopbits=serial.STOPBITS_ONE
-ser.timeout=0.02
+ser.timeout=0.01
 ser.writeTimeout=None
 ser.open() 
 
@@ -40,11 +39,20 @@ def com1():
  ser.write(data)
 
  #Receive Packet
+ while(ser.in_waiting < 10):
+ 	pass
  while (not flag_end_of_tranfer):
  	for i in range(1, M+1): 
 		rec_pack = ser.read(10)
-		print rec_pack
 		print "Received=%d packets" %i 
+		print rec_pack
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[2])).zfill(8)
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[3])).zfill(8)
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[4])).zfill(8)
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[5])).zfill(8)
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[6])).zfill(8)
+		print(' '.join(format(ord(x), 'b') for x in rec_pack[7])).zfill(8)
+	
 
 		if (rec_pack == ""):
 			flag_bad_pack = 1
