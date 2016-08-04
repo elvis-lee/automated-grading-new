@@ -12,7 +12,6 @@ typedef struct __attribute__((packed)){
 	uint8_t type;
 	uint32_t time;
 	uint16_t val;
-	uint8_t checksum;
 } uart_data_t;
 
 typedef struct __attribute__((packed)){

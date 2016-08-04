@@ -12,7 +12,7 @@
 //=====define number of packets to transfer each time before a check=====
 #define M 100
 //=====define packet byte size=====
-#define N 10
+#define N 9
 //=====external variables=====
 extern __IO uint32_t TimingDelay;
 //=====buffer=====
@@ -82,11 +82,11 @@ int main(int argc, char* argv[])
 //=====send packet=====
 void pack_send(const uint8_t *data, uint16_t len)
 {
-    uint8_t packet[10];
+    uint8_t packet[9];
     uint8_t i;
     packet[0] = 'S';
-    packet[9] = 'E';
-    for (i = 1; i < 9; i++)
+    packet[8] = 'E';
+    for (i = 1; i < 8; i++)
         packet[i] = data[i-1];
     Enqueue(&UART1_TXq, packet, len+2);
 }
@@ -95,13 +95,13 @@ void pack_send(const uint8_t *data, uint16_t len)
 //=====packet push=====
 void pack_push(uint8_t *addr,uint8_t IOtype)
 {   
-	if (!IOtype)
+	if (IOtype == BufferRec)
 	{
 		data_array_rec[data_array_rec_length] = *(uart_data_t*)addr;
         data_array_rec_length++;
 	}
 
-	if (IOtype == 1)
+	if (IOtype == BufferSend)
 	{
 		data_array_send[data_array_send_length] = *((uart_data_t*)addr);
         data_array_send_length++;
@@ -113,13 +113,13 @@ void pack_push(uint8_t *addr,uint8_t IOtype)
 //=====packet pop=====
 uart_data_t* pack_pop(uint8_t IOtype)
 {
-	if (!IOtype)
+	if (IOtype == BufferRec)
 	{   
         data_array_rec_length--;
     	return &(data_array_rec[data_array_rec_length]);
 	}
 
-	if (IOtype == 1)
+	if (IOtype == BufferSend)
 	{
         data_array_send_length--;
     	return &(data_array_send[data_array_send_length]);
@@ -175,7 +175,7 @@ void State1_RecPack(void)
             ri = Dequeue(&UART1_RXq,buf,N);
             for (tem_buf_ptr = buf; tem_buf_ptr - buf < ri ;tem_buf_ptr = tem_buf_ptr + sizeof(uart_frame_t))
             {
-                if (*tem_buf_ptr != 'S' || *(tem_buf_ptr+9) != 'E')
+                if (*tem_buf_ptr != 'S' || *(tem_buf_ptr+8) != 'E')
                 {
                     rec_success = 0;
                     GPIO_SetBits(GPIOD,LED6_PIN);
@@ -226,7 +226,6 @@ void State3_SendPack(void)
           end_packet.type = 'E';
           end_packet.time = 0;
           end_packet.val = 0;
-          end_packet.checksum = 'C';
           pack_send((uint8_t*)&end_packet,sizeof(uart_data_t));  
         }
 
@@ -236,7 +235,7 @@ void State3_SendPack(void)
         }
         
         Dequeue(&UART1_RXq,buf,N);
-        if (buf[0] == 'S' && buf[9] == 'E' && buf[1] == 'G'){}
+        if (buf[0] == 'S' && buf[8] == 'E' && buf[1] == 'G'){}
             else 
             {
                 j += M;

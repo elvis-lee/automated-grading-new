@@ -39,11 +39,11 @@ def com1():
  ser.write(data)
 
  #Receive Packet
- while(ser.in_waiting < 10):
+ while(ser.in_waiting < 9):
  	pass
  while (not flag_end_of_tranfer):
  	for i in range(1, M+1): 
-		rec_pack = ser.read(10)
+		rec_pack = ser.read(9)
 		print "Received=%d packets" %i 
 		print rec_pack
 		print(' '.join(format(ord(x), 'b') for x in rec_pack[2])).zfill(8)
@@ -65,13 +65,13 @@ def com1():
 		
 		
 	if flag_bad_pack:
-		ser.write("SB0000000E")
+		ser.write("SB000000E")
 		print "------detected back packet------"
 		print "------resend again------"
 		flag_bad_pack = 0
 		fail = fail + 1
 	else:
-		ser.write("SG0000000E")
+		ser.write("SG000000E")
 		print "------transfer is good-------"
 		npackrec = npackrec + i
 		success = success + 1

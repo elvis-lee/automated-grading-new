@@ -170,8 +170,7 @@ void SysTick_Handler(void)
     {
       data_temp.val = GPIOC->IDR;
       data_temp.time = TimingDelay;
-      data_temp.type = 'D';
-      data_temp.checksum = 'C'; 
+      data_temp.type = 'D'; 
       data_array_send[data_array_send_length++] = data_temp;
     }
 }
