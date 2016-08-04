@@ -1,8 +1,8 @@
 #! /usr/bin/python
 import struct
 
-NPack = 643
-tvalue = 643
+NPack = 10
+tvalue = 10
 f = open('/home/elvis/Workspace/automated-grading-new/data/packetout', 'wb')
 
 f.write(b"SS")
@@ -11,7 +11,7 @@ f.write(struct.pack('H',NPack))
 f.write(b'E')
 
 f.write(b"SL")
-f.write(struct.pack('I',10000)) #Define Sampling Duration here
+f.write(struct.pack('I',20)) #Define Sampling Duration here
 f.write(struct.pack('H',0))
 f.write(b'E')
 
