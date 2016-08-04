@@ -4,38 +4,42 @@
 #define myUSART 1
 #define BufferRec 0
 #define BufferSend 1
-#define RecPack 0
-#define Gen_Samp 1
-#define SendPack 2
+#define SetParam 0
+#define RecPack 1
+#define Gen_Samp 2
+#define SendPack 3
 
 //=====define number of packets to transfer each time before a check=====
 #define M 100
 //=====define packet byte size=====
-#define N 10
-//=====define total packet number
-#define Npack 5678
+#define N 9
 //=====external variables=====
 extern __IO uint32_t TimingDelay;
 //=====buffer=====
 uint8_t buf[QUEUE_SIZE];
 uint8_t *tem_buf_ptr;
-
 //=====data array=====
 uart_data_t data_array_rec[6000];
 uart_data_t data_array_send[6000];
-//=====flag for data array=====
+//=====data array length=====
 __IO uint16_t data_array_rec_length= 0 ; 
 __IO uint16_t data_array_send_length= 0 ;
 //=====counter slows down buf read=====
 uint32_t cnt1 = 0;
 //=====state variable=====
-uint8_t state = RecPack;
+uint8_t state = SetParam;
 //=====tansfer success flag=====
 uint8_t rec_success = 1;
+//=====Total number of packets to send=====
+uint16_t Npack;
+//=====Sample Duration=====
+uint32_t Sample_Duration;
+__IO uint8_t end_of_sample = 0;
 //=====function declare=====
 void pack_push(uint8_t *addr, uint8_t IOtype);
 uart_data_t* pack_pop(uint8_t IOtype);
 void pack_send(const uint8_t *data, uint16_t len);
+void State0_SetParm(void);
 void State1_RecPack(void);
 void State2_Gen_Samp(void);
 void State3_SendPack(void);
@@ -45,7 +49,7 @@ int main(int argc, char* argv[])
 {  
     pins_setup();
 	uart_open(myUSART,460800,0);
-    //SysTick_Config(SystemCoreClock/200000); 
+    SysTick_Config(SystemCoreClock/100000); 
     NVIC_SetPriority(SysTick_IRQn,0);
     SysTick->CTRL  =  SysTick->CTRL & (~1UL);
 
@@ -53,6 +57,10 @@ int main(int argc, char* argv[])
 	{  
         switch (state)
         {
+            case SetParam:
+            State0_SetParm();
+            break;
+
             case RecPack:
             State1_RecPack();
             break;
@@ -74,11 +82,11 @@ int main(int argc, char* argv[])
 //=====send packet=====
 void pack_send(const uint8_t *data, uint16_t len)
 {
-    uint8_t packet[10];
+    uint8_t packet[9];
     uint8_t i;
     packet[0] = 'S';
-    packet[9] = 'E';
-    for (i = 1; i < 9; i++)
+    packet[8] = 'E';
+    for (i = 1; i < 8; i++)
         packet[i] = data[i-1];
     Enqueue(&UART1_TXq, packet, len+2);
 }
@@ -87,13 +95,13 @@ void pack_send(const uint8_t *data, uint16_t len)
 //=====packet push=====
 void pack_push(uint8_t *addr,uint8_t IOtype)
 {   
-	if (!IOtype)
+	if (IOtype == BufferRec)
 	{
 		data_array_rec[data_array_rec_length] = *(uart_data_t*)addr;
         data_array_rec_length++;
 	}
 
-	if (IOtype == 1)
+	if (IOtype == BufferSend)
 	{
 		data_array_send[data_array_send_length] = *((uart_data_t*)addr);
         data_array_send_length++;
@@ -105,17 +113,45 @@ void pack_push(uint8_t *addr,uint8_t IOtype)
 //=====packet pop=====
 uart_data_t* pack_pop(uint8_t IOtype)
 {
-	if (!IOtype)
+	if (IOtype == BufferRec)
 	{   
         data_array_rec_length--;
     	return &(data_array_rec[data_array_rec_length]);
 	}
 
-	if (IOtype == 1)
+	if (IOtype == BufferSend)
 	{
         data_array_send_length--;
     	return &(data_array_send[data_array_send_length]);
 	}	
+}
+
+//=====State0:Set Parameters=====
+void State0_SetParm(void)
+{ 
+    uint32_t ri;
+    uart_data_t temp;
+
+    GPIO_SetBits(GPIOD,LED6_PIN);
+
+    while (pack_avail(&UART1_RXq) < 2*N)
+    {
+        __asm__("nop");
+    }
+    
+    ri = Dequeue(&UART1_RXq,buf,N);
+    temp = *(uart_data_t*)(buf + 1);
+    if (temp.type == 'S')
+        Npack = temp.val;
+
+    ri = Dequeue(&UART1_RXq,buf,N);
+    temp = *(uart_data_t*)(buf + 1);
+    if (temp.type == 'L')
+        Sample_Duration = temp.time;
+
+    state = RecPack;
+
+    GPIO_ResetBits(GPIOD,LED6_PIN);
 }
 
 //=====State1:Receive Packets=====
@@ -124,6 +160,7 @@ void State1_RecPack(void)
     uint32_t ri;
 
     GPIO_SetBits(GPIOD,LED3_PIN);
+
     if (data_array_rec_length == Npack)
     {
         GPIO_ResetBits(GPIOD,LED3_PIN);
@@ -131,28 +168,21 @@ void State1_RecPack(void)
         return;
     }
     else
-
-    if (cnt1 < 80) 
-        cnt1++;
-    else 
     {
-        cnt1 = 0;
         ri = pack_avail(&UART1_RXq);
         if (ri >= N)
         {
             ri = Dequeue(&UART1_RXq,buf,N);
             for (tem_buf_ptr = buf; tem_buf_ptr - buf < ri ;tem_buf_ptr = tem_buf_ptr + sizeof(uart_frame_t))
             {
-                if (*tem_buf_ptr != 'S' || *(tem_buf_ptr+9) != 'E')
-                    {
-                        rec_success = 0;
-                        GPIO_SetBits(GPIOD,LED6_PIN);
-                    }
+                if (*tem_buf_ptr != 'S' || *(tem_buf_ptr+8) != 'E')
+                {
+                    rec_success = 0;
+                    GPIO_SetBits(GPIOD,LED6_PIN);
+                }
                 pack_push(tem_buf_ptr+1,BufferRec);
             }
-
         }
-
     }
 
 }
@@ -161,15 +191,15 @@ void State2_Gen_Samp(void)
 {
     uint32_t i;
     GPIO_SetBits(GPIOD,LED4_PIN);
-    for (i = 0; i < Npack; i++)
+    SysTick->CTRL  =  SysTick->CTRL | 1UL;//enable systick
+    while(!end_of_sample)
     {
-        data_array_send[i] = data_array_rec[i];
+        __asm__("nop");
     }
-    data_array_send_length = Npack;
+    SysTick->CTRL  =  SysTick->CTRL & (~1UL);
     //=====end of transfer packet=====
-    data_array_send[0].type = 'E'; 
+    //data_array_send[0].type = 'E'; 
     state = SendPack; 
-    cnt1 = 0;
     GPIO_ResetBits(GPIOD,LED4_PIN);
 }
 
@@ -177,32 +207,35 @@ void State2_Gen_Samp(void)
 void State3_SendPack(void)
 {
     int j;
+    uint16_t total_packet_to_send = data_array_send_length;
     GPIO_SetBits(GPIOD,LED5_PIN);
 
-    for (j = Npack - M; j > -M; j -= M)
+    for (j = total_packet_to_send - M; j > -M; j -= M)
     {
         while (data_array_send_length > ((j>0)?j:0))
         {
-            if (pack_avail(&UART1_TXq) < 1)  
+            if (pack_avail(&UART1_TXq) < 200)  
             { 
             pack_send((uint8_t*)&data_array_send[--data_array_send_length],sizeof(uart_data_t));
-        //Enqueue(&UART1_TXq,(uint8_t*)&data_array_send[--data_array_send_length],sizeof(uart_data_t));
-         /*
-        if (cnt1 < 800) cnt1++;
-        else 
-        {
-            Enqueue(&UART1_TXq,(uint8_t*)&data_array_send[--data_array_send_length],sizeof(uart_data_t));
-            //Enqueue(&UART1_TXq,"12345678",8);
-            cnt1 = 0;
-        }*/  
             }
         }
+
+        if (!data_array_send_length)
+        {
+          uart_data_t end_packet;
+          end_packet.type = 'E';
+          end_packet.time = 0;
+          end_packet.val = 0;
+          pack_send((uint8_t*)&end_packet,sizeof(uart_data_t));  
+        }
+
         while (pack_avail(&UART1_RXq) < N) 
         {
              __asm__("nop");
         }
+        
         Dequeue(&UART1_RXq,buf,N);
-        if (buf[0] == 'S' && buf[9] == 'E' && buf[1] == 'G'){}
+        if (buf[0] == 'S' && buf[8] == 'E' && buf[1] == 'G'){}
             else 
             {
                 j += M;

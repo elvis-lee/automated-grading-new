@@ -148,33 +148,31 @@ extern uint16_t adc_convert();
 
 void SysTick_Handler(void)
 {
-  uint16_t pins_val;
-  uart_data_t data_temp;
+  static uart_data_t data_temp;
+  extern __IO uint8_t end_of_sample;
+  extern uint32_t Sample_Duration;
 
   TimingDelay++;
-  
 
-  //test if enter here
-  //GPIO_SetBits(GPIOD,LED6_PIN);
-  //GPIO_ToggleBits(GPIOD, LED6_PIN);
-  
-  if ((data_array_rec[data_array_send_length].time) == TimingDelay) 
-  { 
+  if (TimingDelay == Sample_Duration)
+    {
+      end_of_sample = 1;
+    }
     
-    GPIOE->ODR = data_array_rec[data_array_send_length].val;
-    data_array_send_length--;
-  
-  
-  //data_temp.val = GPIOC -> IDR;
-  //data_temp.val = adc_convert();
-  //data_temp.val = 0xF0F0;
-  //data_temp.time = TimingDelay;
-  //data_temp.type = 'A';
-  //data_temp.checksum = 'C'; 
-  data_array_send_length++;
-  //data_array_send[data_array_send_length] = data_temp;
-   // data_array_send[data_array_send_length].val = data_temp.val;
-  }
+  if ((data_array_rec[data_array_rec_length-1].time) == TimingDelay && data_array_rec_length!=0) 
+    { 
+    //data_temp.val = adc_convert();
+      if (data_array_rec[data_array_rec_length-1].type == 'D')
+        GPIOE->ODR = data_array_rec[--data_array_rec_length].val;
+    }
+
+  if (GPIOC->IDR != data_temp.val)
+    {
+      data_temp.val = GPIOC->IDR;
+      data_temp.time = TimingDelay;
+      data_temp.type = 'D'; 
+      data_array_send[data_array_send_length++] = data_temp;
+    }
 }
 
 /******************************************************************************/
