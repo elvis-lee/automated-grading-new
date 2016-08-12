@@ -145,7 +145,7 @@ void PendSV_Handler(void)
   */
   
 extern uint16_t adc_convert();
-
+extern void DAC_SetValue(uint16_t value); 
 void SysTick_Handler(void)
 {
   static uart_data_t data_temp_analog;
@@ -153,22 +153,29 @@ void SysTick_Handler(void)
   static uint16_t adc_val;
   extern __IO uint8_t end_of_sample;
   extern uint32_t Sample_Duration;
-  
+  uint8_t i;
 
   
-
+//=====check sampling duration=====
   if (TimingDelay >= Sample_Duration)
     {
       end_of_sample = 1;
       return;
     }
-    
-  if ((data_array_rec[data_array_rec_length-1].time) == TimingDelay && data_array_rec_length!=0) 
+
+//=====generate digital & analog output=====
+  for (i = 0; i < 2; i++)
+  {
+    if ((data_array_rec[data_array_rec_length-1].time) == TimingDelay && data_array_rec_length!=0) 
     { 
-      if (data_array_rec[data_array_rec_length-1].type == 'D')
+      if  (data_array_rec[data_array_rec_length-1].type == 'A')
+        DAC_SetValue(data_array_rec[--data_array_rec_length].val);
+      else if (data_array_rec[data_array_rec_length-1].type == 'D')
         GPIOE->ODR = data_array_rec[--data_array_rec_length].val;
     }
+  }  
 
+//=====sample analog input=====
   if ((adc_val = adc_convert()) != data_temp_analog.val)
   {
     data_temp_analog.val = adc_val;
@@ -178,8 +185,7 @@ void SysTick_Handler(void)
 
   }
 
-
-  
+//=====sample digital input=====
   if (GPIOC->IDR != data_temp_digital.val)
     {
       data_temp_digital.val = GPIOC->IDR;
@@ -188,8 +194,8 @@ void SysTick_Handler(void)
       data_array_send[data_array_send_length++] = data_temp_digital;
     }
 
+//=====increase local time=====
   TimingDelay++;
-    
 }
 
 /******************************************************************************/

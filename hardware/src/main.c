@@ -45,11 +45,14 @@ void State2_Gen_Samp(void);
 void State3_SendPack(void);
 uint16_t adc_convert();
 void adc_configure();
+void DAC_SetValue(uint16_t value); 
+void dac_configure();
 
 int main(int argc, char* argv[])
 {  
     pins_setup();
     adc_configure();
+    dac_configure();
 	uart_open(myUSART,460800,0);
     SysTick_Config(SystemCoreClock/100000); 
     NVIC_SetPriority(SysTick_IRQn,0);
@@ -81,12 +84,6 @@ int main(int argc, char* argv[])
 	}
 }	
 
-//===== ADC =====
-uint16_t adc_convert(){
- ADC_SoftwareStartConv(ADC1);//Start the conversion
- while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));//Processing the conversion
- return ADC_GetConversionValue(ADC1); //Return the converted data
-}
 
 //=====send packet=====
 void pack_send(const uint8_t *data, uint16_t len)
@@ -284,6 +281,13 @@ static void pins_setup(void)
     GPIO_Init(GPIOE, &GPIO_InitStructure);
 }
 
+//===== ADC =====
+uint16_t adc_convert()
+{
+    ADC_SoftwareStartConv(ADC1);//Start the conversion
+    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));//Processing the conversion
+    return ADC_GetConversionValue(ADC1); //Return the converted data
+}
 
 void adc_configure()
 {
@@ -311,6 +315,41 @@ void adc_configure()
     ADC_Cmd(ADC1,ENABLE);
     //Select the channel to be read from
     ADC_RegularChannelConfig(ADC1,ADC_Channel_0,1,ADC_SampleTime_3Cycles);
+}
+
+//=====DAC=====
+void DAC_SetValue(uint16_t value) 
+{
+    // Check value overflow 
+    if (value > 4095) 
+    {
+        value = 4095;
+    }
+    
+    DAC->DHR12R1 = value;
+}
+
+void dac_configure()
+{
+    DAC_InitTypeDef DAC_InitStruct;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    // GPIOA clock enable (to be used with DAC) 
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+    // DAC Periph clock enable 
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_DAC, ENABLE);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    DAC_DeInit();
+    DAC_InitStruct.DAC_Trigger = DAC_Trigger_None;
+    DAC_InitStruct.DAC_WaveGeneration = DAC_WaveGeneration_None;
+    DAC_InitStruct.DAC_OutputBuffer = DAC_OutputBuffer_Enable;
+    DAC_Init(DAC_Channel_1, &DAC_InitStruct);
+
+    DAC_Cmd(DAC_Channel_1, ENABLE);
 }
 
 
