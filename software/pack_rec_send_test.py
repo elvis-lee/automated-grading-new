@@ -37,6 +37,8 @@ def com1():
  global flag_end_of_tranfer
  #Send Packet
  ser.write(data)
+ #Send "T"
+ ser.write("ST000000E")
 
  #Receive Packet
  while(ser.in_waiting < 9):

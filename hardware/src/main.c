@@ -1,5 +1,6 @@
 #include "main.h"
 #include "uart.h"
+#include "ioctrl.h"
 #include <string.h>
 
 #define myUSART 1
@@ -145,7 +146,7 @@ void pack_send(const uint8_t *data)
 {
     uint8_t packet[9];
     uart_frame_t *frame = (uart_frame_t*)packet;
-    frame->start = 'E';
+    frame->start = 'S';
     frame->stop = 'E';
     memcpy(&(frame->data), data, sizeof(uart_data_t));
     Enqueue(&UART1_TXq, packet, sizeof(uart_frame_t));

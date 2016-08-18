@@ -182,7 +182,8 @@ void SysTick_Handler(void)
   // check for maximum sampling time
   if (TimingDelay >= Sample_Duration)
   {
-    end_of_sample = 1;
+    // end_of_sample = 1;
+    // SysTick->CTRL  =  SysTick->CTRL & (~1UL);
     return;
   }
   
