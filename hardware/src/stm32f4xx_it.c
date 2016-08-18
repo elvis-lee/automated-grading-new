@@ -29,9 +29,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
+#include "ioctrl.h"
+#include "main.h"
 
 
 __IO uint32_t TimingDelay=0;
+__IO uint16_t lastDigitalVals=0x0000;
+__IO uint16_t lastAnalogVal=0x0000;
 
 
 
@@ -138,61 +142,69 @@ void PendSV_Handler(void)
 {
 }
 
+extern uint16_t adc_convert();
+extern void DAC_SetValue(uint16_t value); 
+
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
   * @retval None
   */
-  
-extern uint16_t adc_convert();
-extern void DAC_SetValue(uint16_t value); 
 void SysTick_Handler(void)
 {
-  static uart_data_t data_temp_analog;
-  static uart_data_t data_temp_digital;
-  static uint16_t adc_val;
   extern __IO uint8_t end_of_sample;
   extern uint32_t Sample_Duration;
-  uint8_t i;
 
-  
-//=====check sampling duration=====
-  if (TimingDelay >= Sample_Duration)
+  // check for digital output events
+  uint16_t numDigitalEvents = io_getNumDigitalOut();
+  if( numDigitalEvents > 0 )
+  {
+    ioevent_digital_t* event = io_peakNextDigitalOut();
+    if (event->t == TimingDelay)
     {
-      end_of_sample = 1;
-      return;
+      GPIOE->ODR = event->regvals;
+      io_popNextDigitalOut();
     }
-
-//=====generate digital & analog output=====
-  for (i = 0; i < 2; i++)
-  {
-    if ((data_array_rec[data_array_rec_length-1].time) == TimingDelay && data_array_rec_length!=0) 
-    { 
-      if  (data_array_rec[data_array_rec_length-1].type == 'A')
-        DAC_SetValue(data_array_rec[--data_array_rec_length].val);
-      else if (data_array_rec[data_array_rec_length-1].type == 'D')
-        GPIOE->ODR = data_array_rec[--data_array_rec_length].val;
-    }
-  }  
-
-//=====sample analog input=====
-  if ((adc_val = adc_convert()) != data_temp_analog.val)
-  {
-    data_temp_analog.val = adc_val;
-    data_temp_analog.time = TimingDelay;
-    data_temp_analog.type = 'A'; 
-    data_array_send[data_array_send_length++] = data_temp_analog;
-
   }
 
-//=====sample digital input=====
-  if (GPIOC->IDR != data_temp_digital.val)
+  // check for analog output events
+  uint16_t numAnalogEvents = io_getNumAnalogOut();
+  if( numAnalogEvents > 0 )
+  {
+    ioevent_analog_t* event = io_peakNextAnalogOut();
+    if (event->t == TimingDelay)
     {
-      data_temp_digital.val = GPIOC->IDR;
-      data_temp_digital.time = TimingDelay;
-      data_temp_digital.type = 'D'; 
-      data_array_send[data_array_send_length++] = data_temp_digital;
+      DAC_SetValue(event->analogval);
+      io_popNextAnalogOut();
     }
+  }
+
+  // check for maximum sampling time
+  if (TimingDelay >= Sample_Duration)
+  {
+    end_of_sample = 1;
+    return;
+  }
+  
+  // read digital input
+  uint16_t gpio_vals = GPIOC->IDR;
+  if (gpio_vals != lastDigitalVals)
+  {
+    lastDigitalVals = gpio_vals;
+    // queue digital value to be sent over UART
+    uart_data_t data = {.type='D', .time=TimingDelay, .val=gpio_vals};
+    pack_send( (uint8_t*)&data );
+  }
+
+  // read analog input
+  uint16_t adc_val = adc_convert();
+  if (adc_val != lastAnalogVal)
+  {
+    lastAnalogVal = adc_val;
+    // queue analog value to be sent over UART
+    uart_data_t data = {.type='A', .time=TimingDelay, .val=adc_val};
+    pack_send( (uint8_t*)&data );
+  }
 
 //=====increase local time=====
   TimingDelay++;

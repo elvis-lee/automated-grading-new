@@ -1,5 +1,6 @@
 #include "main.h"
 #include "uart.h"
+#include <string.h>
 
 #define myUSART 1
 #define BufferRec 0
@@ -36,6 +37,9 @@ uint16_t Npack;
 uint32_t Sample_Duration;
 __IO uint8_t end_of_sample = 0;
 //=====function declare=====
+void check_for_uart_packets();
+void start_output_gen();
+/*
 void pack_push(uint8_t *addr, uint8_t IOtype);
 uart_data_t* pack_pop(uint8_t IOtype);
 void pack_send(const uint8_t *data, uint16_t len);
@@ -43,6 +47,7 @@ void State0_SetParm(void);
 void State1_RecPack(void);
 void State2_Gen_Samp(void);
 void State3_SendPack(void);
+*/
 uint16_t adc_convert();
 void adc_configure();
 void DAC_SetValue(uint16_t value); 
@@ -58,8 +63,14 @@ int main(int argc, char* argv[])
     NVIC_SetPriority(SysTick_IRQn,0);
     SysTick->CTRL  =  SysTick->CTRL & (~1UL);
 
+
+
 	while (1)	
-	{  
+	{
+        // when there's time, check for complete UART packets
+        check_for_uart_packets();
+
+        /*
         switch (state)
         {
             case SetParam:
@@ -81,23 +92,71 @@ int main(int argc, char* argv[])
             default: 
             break;
         }
+        */
 	}
 }	
 
-
-//=====send packet=====
-void pack_send(const uint8_t *data, uint16_t len)
+//=====check for complete uart packets=====
+void check_for_uart_packets()
 {
-    uint8_t packet[9];
-    uint8_t i;
-    packet[0] = 'S';
-    packet[8] = 'E';
-    for (i = 1; i < 8; i++)
-        packet[i] = data[i-1];
-    Enqueue(&UART1_TXq, packet, len+2);
+    uint32_t num_bytes = pack_avail(&UART1_RXq);
+    if( num_bytes >= N)
+    {
+        GPIO_ToggleBits(GPIOD,LED3_PIN);
+        // temporary buffer for parsing packet
+        uint8_t raw_bytes[N];
+        Dequeue(&UART1_RXq,raw_bytes,N);
+        uart_frame_t *frame = (uart_frame_t*)raw_bytes;
+        if( frame->start != 'S' || frame->stop != 'E')
+        {
+            // handle bad packets
+            return;
+        }
+        // if packet is good, create an output event and push to buffer
+        switch( frame->data.type )
+        {
+            case PACKET_TYPE_DIGITAL:
+                io_pushDigitalOut( frame->data.time, frame->data.val );
+                break;
+            case PACKET_TYPE_ANALOG:
+                // channel (argument 2) is unused right now.
+                io_pushAnalogOut( frame->data.time, 0, frame->data.val );
+                break;
+            case PACKET_TYPE_START:
+                // start output generation
+                start_output_gen();
+            case PACKET_TYPE_PARAM_NSAMPLES:
+                Npack = frame->data.val;
+                break;
+            case PACKET_TYPE_PARAM_SAMPLELEN:
+                Sample_Duration = frame->data.time;
+                break;
+            default:
+                // unsupported type
+                break;
+        }
+    }
 }
 
 
+
+//=====send packet=====
+void pack_send(const uint8_t *data)
+{
+    uint8_t packet[9];
+    uart_frame_t *frame = (uart_frame_t*)packet;
+    frame->start = 'E';
+    frame->stop = 'E';
+    memcpy(&(frame->data), data, sizeof(uart_data_t));
+    Enqueue(&UART1_TXq, packet, sizeof(uart_frame_t));
+}
+
+void start_output_gen()
+{
+    SysTick->CTRL  =  SysTick->CTRL | 1UL;//enable systick
+}
+
+/*
 //=====packet push=====
 void pack_push(uint8_t *addr,uint8_t IOtype)
 {   
@@ -131,7 +190,9 @@ uart_data_t* pack_pop(uint8_t IOtype)
     	return &(data_array_send[data_array_send_length]);
 	}	
 }
+*/
 
+/*
 //=====State0:Set Parameters=====
 void State0_SetParm(void)
 { 
@@ -159,7 +220,9 @@ void State0_SetParm(void)
 
     GPIO_ResetBits(GPIOD,LED6_PIN);
 }
+*/
 
+/*
 //=====State1:Receive Packets=====
 void State1_RecPack(void)
 {   
@@ -192,7 +255,10 @@ void State1_RecPack(void)
     }
 
 }
+*/
+
 //=====State2:Generate Output and Sample Input=====
+/*
 void State2_Gen_Samp(void)
 {
     uint32_t i;
@@ -208,8 +274,10 @@ void State2_Gen_Samp(void)
     state = SendPack; 
     GPIO_ResetBits(GPIOD,LED4_PIN);
 }
+*/
 
 //=====State3:Send back Packets=====
+/*
 void State3_SendPack(void)
 {
     int j;
@@ -249,6 +317,7 @@ void State3_SendPack(void)
             }
     }
 }
+*/
 
 //=====initialize pins=====
 
