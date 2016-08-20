@@ -154,14 +154,16 @@ void SysTick_Handler(void)
 {
   extern __IO uint8_t end_of_sample;
   extern uint32_t Sample_Duration;
+  extern void end_output_gen();
 
   // check for digital output events
   uint16_t numDigitalEvents = io_getNumDigitalOut();
   if( numDigitalEvents > 0 )
-  {
+  { 
     ioevent_digital_t* event = io_peakNextDigitalOut();
     if (event->t == TimingDelay)
     {
+      GPIO_SetBits(GPIOD,LED4_PIN);
       GPIOE->ODR = event->regvals;
       io_popNextDigitalOut();
     }
@@ -182,8 +184,7 @@ void SysTick_Handler(void)
   // check for maximum sampling time
   if (TimingDelay >= Sample_Duration)
   {
-    // end_of_sample = 1;
-    // SysTick->CTRL  =  SysTick->CTRL & (~1UL);
+    end_output_gen();
     return;
   }
   

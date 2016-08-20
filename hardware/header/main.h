@@ -12,7 +12,6 @@
 #define PACKET_TYPE_DIGITAL ('D')
 #define PACKET_TYPE_ANALOG ('A')
 #define PACKET_TYPE_START ('T')
-#define PACKET_TYPE_PARAM_NSAMPLES ('S')
 #define PACKET_TYPE_PARAM_SAMPLELEN ('L')
 
 //=====frame and data structure=====

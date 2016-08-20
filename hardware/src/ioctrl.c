@@ -73,14 +73,14 @@ ioevent_analog_t* io_peakNextAnalogOut()
 	return &bufout_analog.data[bufout_analog.tail];
 }
 
-ioevent_digital_t io_popNextDigitalOut()
+void io_popNextDigitalOut()
 {
 	ioevent_digital_t event = bufout_digital.data[bufout_digital.tail];
 	bufout_digital.tail = (bufout_digital.tail+1) % BUFSIZE_DIGITAL;
 	bufout_digital.size--;
 }
 
-ioevent_analog_t io_popNextAnalogOut()
+void io_popNextAnalogOut()
 {
 	ioevent_analog_t event = bufout_analog.data[bufout_analog.tail];
 	bufout_analog.tail = (bufout_analog.tail+1) % BUFSIZE_ANALOG;

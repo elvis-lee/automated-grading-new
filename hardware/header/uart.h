@@ -2,7 +2,7 @@
 #define _UART_H
 
 
-#define QUEUE_SIZE 500
+#define QUEUE_SIZE 2000
 
 #include <stdint.h>
 
