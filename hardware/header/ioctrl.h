@@ -9,12 +9,12 @@
 #define IO_BUFFULL (1)
 
 // ----- PUBLIC STRUCTS -----
-typedef struct{
+typedef struct __attribute__((packed)){
 	uint32_t t;
 	uint16_t regvals;
 } ioevent_digital_t;
 
-typedef struct{
+typedef struct __attribute__((packed)){
 	uint32_t t;
 	uint16_t channel;
 	uint16_t analogval;
@@ -29,5 +29,6 @@ void io_popNextDigitalOut();
 void io_popNextAnalogOut();
 uint16_t io_getNumDigitalOut();
 uint16_t io_getNumAnalogOut();
+uint32_t checksize();
 
 #endif // _IOCTRL_H_

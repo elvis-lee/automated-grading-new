@@ -1,12 +1,18 @@
 #! /usr/bin/python
 import struct
 
-NPack = 500
+NPack = 18000
 tvalue = 1
 f = open('/home/elvis/Workspace/automated-grading-new/data/packetout', 'wb')
 
+
+f.write(b"SP")
+f.write(struct.pack('I',NPack*2)) #Define total number of packet here
+f.write(struct.pack('H',0))
+f.write(b'E')
+
 f.write(b"SL")
-f.write(struct.pack('I',1000)) #Define Sampling Duration here
+f.write(struct.pack('I',20000)) #Define Sampling Duration here
 f.write(struct.pack('H',0))
 f.write(b'E')
 

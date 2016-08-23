@@ -4,22 +4,12 @@
 #include <string.h>
 
 #define myUSART 1
-#define BufferRec 0
-#define BufferSend 1
-#define SetParam 0
-#define RecPack 1
-#define Gen_Samp 2
-#define SendPack 3
-
 //=====define packet byte size=====
 #define N 9
 //=====external variables=====
 extern __IO uint32_t TimingDelay;
-//=====buffer=====
-uint8_t buf[QUEUE_SIZE];
-uint8_t *tem_buf_ptr;
-//=====tansfer success flag=====
-uint8_t rec_success = 1;
+//=====Total number of packets to receive=====
+uint32_t Npack = 1; //set it to any number other than 0
 //=====Sample Duration=====
 uint32_t Sample_Duration;
 __IO uint8_t end_of_sample = 0;
@@ -43,8 +33,6 @@ int main(int argc, char* argv[])
     NVIC_SetPriority(SysTick_IRQn,0);
     SysTick->CTRL  =  SysTick->CTRL & (~1UL);
 
-
-
 	while (1)	
 	{
         // when there's time, check for complete UART packets
@@ -54,8 +42,14 @@ int main(int argc, char* argv[])
 
 //=====check for complete uart packets=====
 void check_for_uart_packets()
-{
+{   uint32_t total_size = checksize();
     uint32_t num_bytes = pack_avail(&UART1_RXq);
+
+    if (total_size > 600 || total_size == Npack)
+    {
+        start_output_gen();
+    }
+
     if( num_bytes >= N)
     {
         GPIO_ToggleBits(GPIOD,LED3_PIN);
@@ -78,11 +72,11 @@ void check_for_uart_packets()
                 // channel (argument 2) is unused right now.
                 io_pushAnalogOut( frame->data.time, 0, frame->data.val );
                 break;
-            case PACKET_TYPE_START:
-                // start output generation
-                start_output_gen();
+            case PACKET_TYPE_PARAM_TOTALPACKET:
+                Npack = frame->data.time;
                 break;
             case PACKET_TYPE_PARAM_SAMPLELEN:
+                // define sample duration here 
                 Sample_Duration = frame->data.time;
                 break;
             default:
@@ -90,6 +84,8 @@ void check_for_uart_packets()
                 break;
         }
     }
+    
+
 }
 
 
@@ -175,7 +171,7 @@ void adc_configure()
     //ADC structure configuration
     ADC_DeInit();
     ADC_init_structure.ADC_DataAlign = ADC_DataAlign_Right;//data converted will be shifted to right
-    ADC_init_structure.ADC_Resolution = ADC_Resolution_8b;//Input voltage is converted into a 12bit number giving a maximum value of 4096
+    ADC_init_structure.ADC_Resolution = ADC_Resolution_12b;//Input voltage is converted into a 12bit number giving a maximum value of 4096
     ADC_init_structure.ADC_ContinuousConvMode = ENABLE; //the conversion is continuous, the input data is converted more than once
     ADC_init_structure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_CC1;// conversion is synchronous with TIM1 and CC1 (actually I'm not sure about this one :/)
     ADC_init_structure.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;//no trigger for conversion

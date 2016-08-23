@@ -2,33 +2,37 @@
 #include "ioctrl.h"
 
 // ----- PRIVATE DEFINITIONS -----
-#define BUFSIZE_DIGITAL (1000)
-#define BUFSIZE_ANALOG (1000)
+#define BUFSIZE_DIGITAL (1100)
+#define BUFSIZE_ANALOG (1100)
 
 // ----- PRIVATE STRUCTS -----
-typedef struct{
+typedef struct {
 	uint16_t head;
 	uint16_t tail;
 	uint16_t size;
 	ioevent_digital_t data[BUFSIZE_DIGITAL];
-} DigitalQueue_t;
+} __attribute__((packed)) DigitalQueue_t;
 
-typedef struct{
+typedef struct {
 	uint16_t head;
 	uint16_t tail;
 	uint16_t size;
 	ioevent_analog_t data[BUFSIZE_ANALOG];
-} AnalogQueue_t;
+} __attribute__((packed)) AnalogQueue_t;
+
 
 // ----- PRIVATE VARIABLES -----
 // digital ring buffers
 DigitalQueue_t bufout_digital = {.head=0, .tail=0, .size=0};
-DigitalQueue_t bufin_digital = {.head=0, .tail=0, .size=0};
 // analog ring buffers
 AnalogQueue_t bufout_analog = {.head=0, .tail=0, .size=0};
-AnalogQueue_t bufin_analog = {.head=0, .tail=0, .size=0};
 
 // ----- PUBLIC FUNCTION DEFINITIONS -----
+uint32_t checksize()
+{
+	return (bufout_digital.size + bufout_analog.size);
+}
+
 int io_pushDigitalOut(uint32_t t, uint16_t regvals)
 {
 	ioevent_digital_t event = {.t=t, .regvals=regvals};
