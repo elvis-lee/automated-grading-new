@@ -14,9 +14,9 @@ class WaveFormFileHelper:
         self.f.close()
 
     def write(self, cmd, timestamp, data):
-        self.f.write(struct.pack('ccIHc', b'S', cmd.encode('ascii'), timestamp, data, b'E'))
+        self.f.write(struct.pack('=ccIHc', b'S', cmd.encode('ascii'), timestamp, data, b'E'))
 
     def read(self):
         msg = self.f.read(9)
-        (_, cmd, timestamp, data, _) = unpack('ccIHc', msg)
+        (_, cmd, timestamp, data, _) = struct.unpack('=ccIHc', msg)
         return (cmd, timestamp, data)
