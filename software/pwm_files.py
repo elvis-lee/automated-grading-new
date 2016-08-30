@@ -3,19 +3,19 @@
 from waveform_helper import WaveFormFileHelper
 
 tasks = [
-        {'length': 5000, 'sequence': [(0, 3, 7)]},
-        {'length': 5000, 'sequence': [(0, 31, 31)]},
-        {'length': 7500, 'sequence': [(0, 2, 9), (5000, 10, 10)]},
-        {'length': 7500, 'sequence': [(0, 1, 1), (2500, 4, 4), (5000, 9, 9)]},
+        {'length': 20000, 'sequence': [(0, 3, 7)]},
+        {'length': 20000, 'sequence': [(0, 31, 31)]},
+        {'length': 30000, 'sequence': [(0, 2, 9), (15000, 10, 10)]},
+        {'length': 60000, 'sequence': [(0, 1, 1), (20000, 4, 4), (40000, 9, 9)]},
 ]
 
 tasks.append({
-    'length': 10000,
-    'sequence': [(x * 500, x, (x + 10) % 32) for x in range(20)]
+    'length': 12500 * 20,
+    'sequence': [(x * 12500, x, (x + 10) % 32) for x in range(20)]
 })
 tasks.append({
-    'length': 20000,
-    'sequence': [(x * 500, (x + 17) % 32, (47 - x) % 32) for x in range(40)]
+    'length': 12500 * 40,
+    'sequence': [(x * 12500, (x + 17) % 32, (47 - x) % 32) for x in range(40)]
 })
 
 

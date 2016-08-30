@@ -17,6 +17,12 @@ class WaveFormFileHelper:
         self.f.write(struct.pack('=ccIHc', b'S', cmd.encode('ascii'), timestamp, data, b'E'))
 
     def read(self):
-        msg = self.f.read(9)
-        (_, cmd, timestamp, data, _) = struct.unpack('=ccIHc', msg)
-        return (cmd, timestamp, data)
+        while True:
+            msg = self.f.read(9)
+            if not msg or len(msg) < 9:
+                return None
+            (sflag, cmd, timestamp, data, eflag) = struct.unpack('=ccIHc', msg)
+            sflag, cmd, eflag = sflag.decode('ascii'), cmd.decode('ascii'), eflag.decode('ascii')
+            if sflag == 'S' and eflag == 'E':
+                return (cmd, timestamp, data)
+        return None
