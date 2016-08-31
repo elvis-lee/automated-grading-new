@@ -3,19 +3,19 @@
 from waveform_helper import WaveFormFileHelper
 
 tasks = [
-        {'length': 20000, 'sequence': [(0, 3, 7)]},
-        {'length': 20000, 'sequence': [(0, 31, 31)]},
-        {'length': 30000, 'sequence': [(0, 2, 9), (15000, 10, 10)]},
-        {'length': 60000, 'sequence': [(0, 1, 1), (20000, 4, 4), (40000, 9, 9)]},
+        {'length': 25000, 'sequence': [(0, 3, 40)]},
+        {'length': 25000, 'sequence': [(0, 31, 100)]},
+        {'length': 50000, 'sequence': [(0, 2, 20), (25000, 10, 80)]},
+        {'length': 60000, 'sequence': [(0, 5, 10), (20000, 10, 40), (40000, 15, 90)]},
 ]
 
 tasks.append({
-    'length': 12500 * 20,
-    'sequence': [(x * 12500, x, (x + 10) % 32) for x in range(20)]
+    'length': 20000 * 20,
+    'sequence': [(x * 20000, x, (8 * x + 10) % 102) for x in range(20)]
 })
 tasks.append({
-    'length': 12500 * 40,
-    'sequence': [(x * 12500, (x + 17) % 32, (47 - x) % 32) for x in range(40)]
+    'length': 17500 * 40,
+    'sequence': [(x * 17500, (x + 17) % 32, (1000 - 4 * x) % 102) for x in range(40)]
 })
 
 
@@ -26,6 +26,8 @@ for idx, task in enumerate(tasks):
         wfh.write('P', len(task['sequence']), 0)
         wfh.write('L', task['length'], 0)
         for event in task['sequence']:
-            data = (event[1] | (event[2] << 5))
-            wfh.write('D', event[0], data)
+            bv = (event[1] | (event[2] << 5))
+            wfh.write('D', event[0]     , bv            )
+            wfh.write('D', event[0] + 5 , bv | (1 << 12))
+            wfh.write('D', event[0] + 50, bv            )
     

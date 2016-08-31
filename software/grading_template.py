@@ -6,12 +6,13 @@ from waveform_helper import WaveFormFileHelper
 TASK_ID = 0
 
 TOLERENCE = 1
+PIN_IDX = 0
 
 def grade(time_series, st, et, P, R):
-    exp_period_ticks = (P + 1) * 40
+    exp_period_ticks = (P + 1) * 50
     exp_on_ticks = exp_period_ticks * R / 31
     if R == 0 or R == 31:  # corner cases
-        st_interest = st + 2 * exp_period_ticks
+        st_interest = st + 50 + 2 * exp_period_ticks
         et_interest = et - 2 * exp_period_ticks
         on_ratio = float(time_series[st_interest:et_interest]) / (et_interest - st_interest)
         if R == 0:
@@ -19,15 +20,17 @@ def grade(time_series, st, et, P, R):
         elif R == 31:
             return max(0., (on_ratio - 0.999) * 1000.)
     else:
-        st_interest = st + exp_period_ticks
+        st_interest = st + 50 + exp_period_ticks
         et_interest = et - exp_period_ticks
         rising_edges = [i+1 for i in range(st_interest, et_interest - 1) if time_series[i] == 0 and time_series[i+1] == 1]
+        print(rising_edges)
         if len(rising_edges) < 5:
             return 0.
         on_durations = [sum(time_series[rising_edges[i]:rising_edges[i+1]]) for i in range(len(rising_edges) - 1)]
+        print(on_durations, st, et, exp_period_ticks, exp_on_ticks)
         periods = [v for v in numpy.diff(rising_edges)]
         if rising_edges[0] - st_interest > exp_period_ticks:
-            periods.append(rising_edges[0] - st_interst)
+            periods.append(rising_edges[0] - st_interest)
         if et_interest - rising_edges[-1] > exp_period_ticks:
             periods.append(et_interest - rising_edges[-1])
         period_penalty = (numpy.mean([max(0, abs(p - exp_period_ticks) - TOLERENCE) for p in periods]) ** 2) * 0.03
@@ -35,19 +38,19 @@ def grade(time_series, st, et, P, R):
         return 1. - min(0.5, period_penalty) - min(0.5, ratio_penalty)
 
 tasks = [
-        {'length': 20000, 'sequence': [(0, 3, 7)]},
-        {'length': 20000, 'sequence': [(0, 31, 31)]},
-        {'length': 30000, 'sequence': [(0, 2, 9), (15000, 10, 10)]},
-        {'length': 60000, 'sequence': [(0, 1, 1), (20000, 4, 4), (40000, 9, 9)]},
+        {'length': 25000, 'sequence': [(0, 3, 40)]},
+        {'length': 25000, 'sequence': [(0, 31, 100)]},
+        {'length': 50000, 'sequence': [(0, 2, 20), (25000, 10, 80)]},
+        {'length': 60000, 'sequence': [(0, 5, 10), (20000, 10, 40), (40000, 15, 90)]},
 ]
 
 tasks.append({
-    'length': 12500 * 20,
-    'sequence': [(x * 12500, x, (x + 10) % 32) for x in range(20)]
+    'length': 20000 * 20,
+    'sequence': [(x * 20000, x, (8 * x + 10) % 102) for x in range(20)]
 })
 tasks.append({
-    'length': 12500 * 40,
-    'sequence': [(x * 12500, (x + 17) % 32, (47 - x) % 32) for x in range(40)]
+    'length': 17500 * 40,
+    'sequence': [(x * 17500, (x + 17) % 32, (1000 - 4 * x) % 102) for x in range(40)]
 })
 
 length = tasks[TASK_ID]['length']
@@ -63,7 +66,8 @@ with wfh_r:
             break
         cmd, time, pvals = pkg
         if cmd == 'D':
-            events.append((time, pvals & 1))
+            v = (pvals & (1 << PIN_IDX)) >> PIN_IDX
+            events.append((time, v))
 
 time_series = numpy.zeros(length, dtype=numpy.int)
 events.append((length, 0))
