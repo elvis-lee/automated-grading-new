@@ -13,6 +13,8 @@ uint32_t Npack = 1; //set it to any number other than 0
 //=====Sample Duration=====
 uint32_t Sample_Duration;
 __IO uint8_t end_of_sample = 0;
+//====temperary 
+uint32_t i=0;
 //=====function declare=====
 void check_for_uart_packets();
 void start_output_gen();
@@ -29,7 +31,7 @@ int main(int argc, char* argv[])
     adc_configure();
     dac_configure();
 	uart_open(myUSART,460800,0);
-    SysTick_Config(SystemCoreClock/2500); 
+    SysTick_Config(SystemCoreClock/5000); 
     NVIC_SetPriority(SysTick_IRQn,0);
     SysTick->CTRL  =  SysTick->CTRL & (~1UL);
 
@@ -78,6 +80,12 @@ void check_for_uart_packets()
             case PACKET_TYPE_PARAM_SAMPLELEN:
                 // define sample duration here 
                 Sample_Duration = frame->data.time;
+                break;
+            case PACKET_TYPE_RESET_SYSTEM:
+                // Reset System
+                NVIC_SystemReset();
+                // for (i = 0; i < 10; i++)
+                // __asm__("nop");
                 break;
             default:
                 // unsupported type

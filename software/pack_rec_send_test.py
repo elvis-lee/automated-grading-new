@@ -23,10 +23,15 @@ def send_pack():
 	#Get Packet Ready here
 	f1 = open('/home/elvis/Workspace/automated-grading-new/data/packetout', 'rb')
 	data = f1.read()
+	#Reset the hardware engine first!
+	ser.write("SR000000E")
+	#Wait for 1 second! Important! the hardware engine needs time to reset
+	time.sleep(1)
 	#Send Packet
 	ser.write(data)
 
 def receive_pack():
+	f = open('/home/elvis/Workspace/automated-grading-new/data/packet_file_from_DUT', 'wb')
 	i = 0
 	digital = 0
 	analog = 0
@@ -49,6 +54,7 @@ def receive_pack():
 		print(' '.join(format(ord(x), 'b') for x in rec_pack[5])).zfill(8)
 		print(' '.join(format(ord(x), 'b') for x in rec_pack[6])).zfill(8)
 		print(' '.join(format(ord(x), 'b') for x in rec_pack[7])).zfill(8)
+		f.write(rec_pack)
 
 		if (rec_pack[1] == 'E'):	
 			flag_end_of_tranfer = 1;

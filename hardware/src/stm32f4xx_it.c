@@ -205,7 +205,7 @@ void SysTick_Handler(void)
     lastAnalogVal = adc_val;
     // queue analog value to be sent over UART
     uart_data_t data = {.type='A', .time=TimingDelay, .val=adc_val};
-    pack_send( (uint8_t*)&data );
+    // pack_send( (uint8_t*)&data );
   }
 
 //=====increase local time=====
