@@ -14,6 +14,8 @@
 #define PACKET_TYPE_PARAM_SAMPLELEN ('L')
 #define PACKET_TYPE_PARAM_TOTALPACKET ('P')
 #define PACKET_TYPE_RESET_SYSTEM ('R')
+#define PACKET_TYPE_ANALOG_READING_ENABLE ('O')
+#define PACKET_TYPE_DUT_START ('U')
 
 //=====frame and data structure=====
 typedef struct __attribute__((packed)){
@@ -30,6 +32,7 @@ typedef struct __attribute__((packed)){
 
 //=====setup=====
 static void pins_setup(void);
+static void pins_setup_DUT(void);
 static void adc_configure(void);
 uint16_t adc_convert(void);
 void pack_send(const uint8_t *data);

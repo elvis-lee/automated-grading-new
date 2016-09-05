@@ -8,26 +8,30 @@
 #define N 9
 //=====external variables=====
 extern __IO uint32_t TimingDelay;
+extern __IO uint8_t analog_reading_enable;
 //=====Total number of packets to receive=====
 uint32_t Npack = 1; //set it to any number other than 0
 //=====Sample Duration=====
 uint32_t Sample_Duration;
 __IO uint8_t end_of_sample = 0;
-//====temperary 
-uint32_t i=0;
+//=====variables used in for-loop counting=====
+uint32_t i;
 //=====function declare=====
 void check_for_uart_packets();
 void start_output_gen();
 void end_output_gen();
+void DUT_start();
 
 uint16_t adc_convert();
 void adc_configure();
 void DAC_SetValue(uint16_t value); 
 void dac_configure();
 
+
 int main(int argc, char* argv[])
 {  
     pins_setup();
+    pins_setup_DUT();
     adc_configure();
     dac_configure();
 	uart_open(myUSART,460800,0);
@@ -84,8 +88,12 @@ void check_for_uart_packets()
             case PACKET_TYPE_RESET_SYSTEM:
                 // Reset System
                 NVIC_SystemReset();
-                // for (i = 0; i < 10; i++)
-                // __asm__("nop");
+                break;
+            case PACKET_TYPE_ANALOG_READING_ENABLE:
+                analog_reading_enable = 1;
+                break;
+            case PACKET_TYPE_DUT_START:
+                DUT_start();
                 break;
             default:
                 // unsupported type
@@ -96,7 +104,20 @@ void check_for_uart_packets()
 
 }
 
+//=====DUT pins setup=====
+void pins_setup_DUT()
+{
+    GPIO_SetBits(GPIOD,GPIO_Pin_14);
+}
 
+//=====DUT START=====
+void DUT_start()
+{
+    GPIO_ResetBits(GPIOD,GPIO_Pin_14);
+    for (i = 0; i < 1000000; i++)
+        __asm__("nop");
+    GPIO_SetBits(GPIOD,GPIO_Pin_14);
+}
 
 //=====send packet=====
 void pack_send(const uint8_t *data)

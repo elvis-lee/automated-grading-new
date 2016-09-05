@@ -21,17 +21,19 @@ ser.open()
 
 def send_pack():
 	#Get Packet Ready here
-	f1 = open('/home/elvis/Workspace/automated-grading-new/data/packetout', 'rb')
+	f1 = open('/home/embed-autograder/Workspace/autograder/backend/data/packetout', 'rb')
 	data = f1.read()
 	#Reset the hardware engine first!
 	ser.write("SR000000E")
 	#Wait for 1 second! Important! the hardware engine needs time to reset
 	time.sleep(1)
+	#DUT start 
+	ser.write("SU000000E")
 	#Send Packet
 	ser.write(data)
 
 def receive_pack():
-	f = open('/home/elvis/Workspace/automated-grading-new/data/packet_file_from_DUT', 'wb')
+	f = open('/home/embed-autograder/Workspace/autograder/backend/data/packet_file_from_DUT', 'wb')
 	i = 0
 	digital = 0
 	analog = 0

@@ -36,6 +36,7 @@
 __IO uint32_t TimingDelay=0;
 __IO uint16_t lastDigitalVals=0x0000;
 __IO uint16_t lastAnalogVal=0x0000;
+__IO uint8_t analog_reading_enable=0;
 
 
 
@@ -165,6 +166,11 @@ void SysTick_Handler(void)
     {
       GPIO_SetBits(GPIOD,LED4_PIN);
       GPIOE->ODR = event->regvals;
+      if (event->regvals & 1)
+        GPIO_SetBits(GPIOD,GPIO_Pin_1);
+      else 
+        GPIO_ResetBits(GPIOD,GPIO_Pin_1);
+      
       io_popNextDigitalOut();
     }
   }
@@ -199,14 +205,19 @@ void SysTick_Handler(void)
   }
 
   // read analog input
-  uint16_t adc_val = adc_convert();
-  if (adc_val != lastAnalogVal)
+  if (analog_reading_enable)
   {
-    lastAnalogVal = adc_val;
-    // queue analog value to be sent over UART
-    uart_data_t data = {.type='A', .time=TimingDelay, .val=adc_val};
-    // pack_send( (uint8_t*)&data );
+    uint16_t adc_val = adc_convert();
+    if (adc_val != lastAnalogVal)
+    {
+     lastAnalogVal = adc_val;
+     // queue analog value to be sent over UART
+     uart_data_t data = {.type='A', .time=TimingDelay, .val=adc_val};
+     pack_send( (uint8_t*)&data );
+    }
   }
+
+
 
 //=====increase local time=====
   TimingDelay++;
