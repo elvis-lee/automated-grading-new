@@ -2,9 +2,11 @@
 ############################# PROJECT SETUP #############################
 # Put your stlink folder here so make burn will work.
 STLINK=/home/elvis/stlink
+#STLINK=/usr/local/bin/stlink
 
 # Add support for Cortex-M4 and STM32F4 Discovery Board
 LIB_COMMON = /home/elvis/stm32_discovery_arm_gcc/STM32F4-Discovery_FW_V1.1.0
+#LIB_COMMON = /home/paul/Workspace/MobileRadar/src/arm/common/stm32f4discovery
 
 # discovery support
 DISCOVERY = $(LIB_COMMON)/Libraries

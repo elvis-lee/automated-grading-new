@@ -29,9 +29,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
+#include "ioctrl.h"
+#include "main.h"
 
 
 __IO uint32_t TimingDelay=0;
+__IO uint16_t lastDigitalVals=0x0000;
+__IO uint16_t lastAnalogVal=0x0000;
 
 
 
@@ -138,41 +142,74 @@ void PendSV_Handler(void)
 {
 }
 
+extern uint16_t adc_convert();
+extern void DAC_SetValue(uint16_t value); 
+
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
   * @retval None
   */
-  
-extern uint16_t adc_convert();
-
 void SysTick_Handler(void)
 {
-  static uart_data_t data_temp;
   extern __IO uint8_t end_of_sample;
   extern uint32_t Sample_Duration;
+  extern void end_output_gen();
 
+  // check for digital output events
+  uint16_t numDigitalEvents = io_getNumDigitalOut();
+  if( numDigitalEvents > 0 )
+  { 
+    ioevent_digital_t* event = io_peakNextDigitalOut();
+    if (event->t == TimingDelay)
+    {
+      GPIO_SetBits(GPIOD,LED4_PIN);
+      GPIOE->ODR = event->regvals;
+      io_popNextDigitalOut();
+    }
+  }
+
+  // check for analog output events
+  uint16_t numAnalogEvents = io_getNumAnalogOut();
+  if( numAnalogEvents > 0 )
+  {
+    ioevent_analog_t* event = io_peakNextAnalogOut();
+    if (event->t == TimingDelay)
+    {
+      DAC_SetValue(event->analogval);
+      io_popNextAnalogOut();
+    }
+  }
+
+  // check for maximum sampling time
+  if (TimingDelay >= Sample_Duration)
+  {
+    end_output_gen();
+    return;
+  }
+  
+  // read digital input
+  uint16_t gpio_vals = GPIOC->IDR;
+  if (gpio_vals != lastDigitalVals)
+  {
+    lastDigitalVals = gpio_vals;
+    // queue digital value to be sent over UART
+    uart_data_t data = {.type='D', .time=TimingDelay, .val=gpio_vals};
+    pack_send( (uint8_t*)&data );
+  }
+
+  // read analog input
+  uint16_t adc_val = adc_convert();
+  if (adc_val != lastAnalogVal)
+  {
+    lastAnalogVal = adc_val;
+    // queue analog value to be sent over UART
+    uart_data_t data = {.type='A', .time=TimingDelay, .val=adc_val};
+    // pack_send( (uint8_t*)&data );
+  }
+
+//=====increase local time=====
   TimingDelay++;
-
-  if (TimingDelay == Sample_Duration)
-    {
-      end_of_sample = 1;
-    }
-    
-  if ((data_array_rec[data_array_rec_length-1].time) == TimingDelay && data_array_rec_length!=0) 
-    { 
-    //data_temp.val = adc_convert();
-      if (data_array_rec[data_array_rec_length-1].type == 'D')
-        GPIOE->ODR = data_array_rec[--data_array_rec_length].val;
-    }
-
-  if (GPIOC->IDR != data_temp.val)
-    {
-      data_temp.val = GPIOC->IDR;
-      data_temp.time = TimingDelay;
-      data_temp.type = 'D'; 
-      data_array_send[data_array_send_length++] = data_temp;
-    }
 }
 
 /******************************************************************************/
