@@ -15,7 +15,7 @@
 #define PACKET_TYPE_PARAM_TOTALPACKET ('P')
 #define PACKET_TYPE_RESET_SYSTEM ('R')
 #define PACKET_TYPE_ANALOG_READING_ENABLE ('O')
-#define PACKET_TYPE_DUT_START ('U')
+#define PACKET_TYPE_DUT_RESET ('U')
 
 //=====frame and data structure=====
 typedef struct __attribute__((packed)){

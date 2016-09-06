@@ -29,6 +29,7 @@ def send_pack():
 	time.sleep(1)
 	#DUT start 
 	ser.write("SU000000E")
+	time.sleep(0.1)
 	#Send Packet
 	ser.write(data)
 

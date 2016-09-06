@@ -2,8 +2,8 @@
 #include "ioctrl.h"
 
 // ----- PRIVATE DEFINITIONS -----
-#define BUFSIZE_DIGITAL (1100)
-#define BUFSIZE_ANALOG (1100)
+#define BUFSIZE_DIGITAL (3000)
+#define BUFSIZE_ANALOG (1000)
 
 // ----- PRIVATE STRUCTS -----
 typedef struct {

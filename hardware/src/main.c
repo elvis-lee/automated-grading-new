@@ -20,7 +20,7 @@ uint32_t i;
 void check_for_uart_packets();
 void start_output_gen();
 void end_output_gen();
-void DUT_start();
+void DUT_reset();
 
 uint16_t adc_convert();
 void adc_configure();
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     adc_configure();
     dac_configure();
 	uart_open(myUSART,460800,0);
-    SysTick_Config(SystemCoreClock/5000); 
+    SysTick_Config(SystemCoreClock/5000); //Systick Frequency 
     NVIC_SetPriority(SysTick_IRQn,0);
     SysTick->CTRL  =  SysTick->CTRL & (~1UL);
 
@@ -51,7 +51,7 @@ void check_for_uart_packets()
 {   uint32_t total_size = checksize();
     uint32_t num_bytes = pack_avail(&UART1_RXq);
 
-    if (total_size > 600 || total_size == Npack)
+    if (total_size > 500 || total_size == Npack)
     {
         start_output_gen();
     }
@@ -92,8 +92,8 @@ void check_for_uart_packets()
             case PACKET_TYPE_ANALOG_READING_ENABLE:
                 analog_reading_enable = 1;
                 break;
-            case PACKET_TYPE_DUT_START:
-                DUT_start();
+            case PACKET_TYPE_DUT_RESET:
+                DUT_reset();
                 break;
             default:
                 // unsupported type
@@ -111,12 +111,15 @@ void pins_setup_DUT()
 }
 
 //=====DUT START=====
-void DUT_start()
+void DUT_reset()
 {
+    //set PD14 low for a while to reset DUT
     GPIO_ResetBits(GPIOD,GPIO_Pin_14);
     for (i = 0; i < 1000000; i++)
         __asm__("nop");
     GPIO_SetBits(GPIOD,GPIO_Pin_14);
+    for (i = 0; i < 10000000; i++)
+        __asm__("nop");
 }
 
 //=====send packet=====
