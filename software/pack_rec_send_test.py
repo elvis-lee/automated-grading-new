@@ -21,7 +21,7 @@ ser.open()
 
 def send_pack():
 	#Get Packet Ready here
-	f1 = open('/home/embed-autograder/Workspace/autograder/backend/data/packetout', 'rb')
+	f1 = open('/home/embed-autograder/Workspace/autograder/backend/data/6.in.txt', 'rb')
 	data = f1.read()
 	#Reset the hardware engine first!
 	ser.write("SR000000E")
