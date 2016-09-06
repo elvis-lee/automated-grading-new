@@ -2,7 +2,7 @@ import sys
 import numpy
 import struct
 
-TASK_ID = 1
+TASK_ID = 0
 
 TOLERENCE = 1
 PIN_IDX = 0
