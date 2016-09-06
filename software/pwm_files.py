@@ -20,7 +20,7 @@ tasks.append({
 
 
 for idx, task in enumerate(tasks):
-    filename = 'output/%d.in.txt' % (idx + 1)
+    filename = 'input_cases/%d.in.txt' % (idx + 1)
     wfh = WaveFormFileHelper(filename, 'w')
     with wfh:
         wfh.write('P', len(task['sequence']), 0)
