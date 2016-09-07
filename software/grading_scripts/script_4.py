@@ -82,18 +82,18 @@ tasks.append({
 length = tasks[TASK_ID]['length']
 sequence = tasks[TASK_ID]['sequence']
 
-input_name = sys.argv[1]
+# read waveform file
+wavfile = sys.argv[1]
 events = []
-wfh_r = WaveFormFileHelper(input_name, 'r')
-with wfh_r:
-    while True:
-        pkg = wfh_r.read()
-        if not pkg:
-            break
-        cmd, time, pvals = pkg
-        if cmd == 'D':
-            v = (pvals & (1 << PIN_IDX)) >> PIN_IDX
-            events.append((time, v))
+with open(wavfile, 'r') as f:
+    packet = f.readline().split(',')
+    pktType = int(packet[0])
+    pktTime = int(packet[1])
+    pktVal = int(packet[2])
+    if pktType == 'D':
+        # get binary on/off PWM signal
+        v = (pktVal & (1 << PIN_IDX)) >> PIN_IDX
+        events.append( (pktTime, v) )
 
 time_series = numpy.zeros(length, dtype=numpy.int)
 events.append((length, 0))
