@@ -1,38 +1,11 @@
 import sys
 import numpy
-import struct
 
+TASK_ID = 0
 TASK_ID = 2
-
 TOLERENCE = 1
 PIN_IDX = 0
 
-class WaveFormFileHelper:
-    def __init__(self, filename, mode):
-        self.filename = filename
-        if mode[-1] != 'b':
-            mode += 'b'
-        self.mode = mode
-
-    def __enter__(self):
-        self.f = open(self.filename, self.mode)
-
-    def __exit__(self, type, value, traceback):
-        self.f.close()
-
-    def write(self, cmd, timestamp, data):
-        self.f.write(struct.pack('=ccIHc', b'S', cmd.encode('ascii'), timestamp, data, b'E'))
-
-    def read(self):
-        while True:
-            msg = self.f.read(9)
-            if not msg or len(msg) < 9:
-                return None
-            (sflag, cmd, timestamp, data, eflag) = struct.unpack('=ccIHc', msg)
-            sflag, cmd, eflag = sflag.decode('ascii'), cmd.decode('ascii'), eflag.decode('ascii')
-            if sflag == 'S' and eflag == 'E':
-                return (cmd, timestamp, data)
-        return None
 
 def grade(time_series, st, et, P, R):
     exp_period_ticks = (P + 1) * 50
@@ -86,14 +59,15 @@ sequence = tasks[TASK_ID]['sequence']
 wavfile = sys.argv[1]
 events = []
 with open(wavfile, 'r') as f:
-    packet = f.readline().split(',')
-    pktType = int(packet[0])
-    pktTime = int(packet[1])
-    pktVal = int(packet[2])
-    if pktType == 'D':
-        # get binary on/off PWM signal
-        v = (pktVal & (1 << PIN_IDX)) >> PIN_IDX
-        events.append( (pktTime, v) )
+    for line in f.readlines():
+        packet = line.split(',')
+        pktType = int(packet[0])
+        pktTime = int(packet[1])
+        pktVal = int(packet[2])
+        if pktType == ord('D'):
+            # get binary on/off PWM signal
+            v = (pktVal & (1 << PIN_IDX)) >> PIN_IDX
+            events.append( (pktTime, v) )
 
 time_series = numpy.zeros(length, dtype=numpy.int)
 events.append((length, 0))

@@ -1,4 +1,4 @@
-template_file = 'grading_template_ugly.py'
+template_file = 'grading_template.py'
 out_dir = 'grading_scripts/'
 
 with open(template_file, 'r') as f:
